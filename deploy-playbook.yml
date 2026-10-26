@@ -1,0 +1,22 @@
+- name: Automate Laravel 3-Tier Deployment on Kubernetes
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Clone or pull latest application code from GitHub
+      ansible.builtin.git:
+        repo: 'https://github.com/DBX-umer/laravel-exam-app.git'
+        dest: /tmp/laravel-exam-app
+        version: main
+        force: yes
+
+    - name: Deploy MySQL Database Tier
+      ansible.builtin.command: kubectl apply -f /tmp/laravel-exam-app/k8s/mysql.yaml
+
+    - name: Wait for MySQL Database pod rollout
+      ansible.builtin.command: kubectl rollout status deployment/mysql-db --timeout=120s
+
+    - name: Deploy Laravel Application Tier
+      ansible.builtin.command: kubectl apply -f /tmp/laravel-exam-app/k8s/laravel.yaml
+
+    - name: Wait for Laravel Application pod rollout
+      ansible.builtin.command: kubectl rollout status deployment/laravel-app --timeout=120s
