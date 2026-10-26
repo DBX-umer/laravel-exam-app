@@ -20,3 +20,14 @@
 
     - name: Wait for Laravel Application pod rollout
       ansible.builtin.command: kubectl rollout status deployment/laravel-app --timeout=120s
+
+    - name: Verify 3-Tier Endpoint Response
+      ansible.builtin.uri:
+        url: http://localhost:30080/db-test
+        return_content: yes
+        status_code: 200
+      register: app_response
+
+    - name: Print Endpoint Verification
+      ansible.builtin.debug:
+        msg: "{{ app_response.json }}"
