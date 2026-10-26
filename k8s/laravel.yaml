@@ -12,10 +12,37 @@ spec:
       labels:
         app: laravel
     spec:
+      initContainers:
+      - name: setup-laravel
+        image: composer:latest
+        command:
+        - sh
+        - -c
+        - |
+          rm -rf /var/www/html/* /var/www/html/.[!.]*
+          git clone https://github.com/DBX-umer/laravel-exam-app.git /var/www/html
+          cd /var/www/html
+          composer config audit.block-insecure false
+          composer config platform-check false
+          composer install --no-interaction --prefer-dist --no-scripts --ignore-platform-reqs
+        volumeMounts:
+        - name: app-code
+          mountPath: /var/www/html
       containers:
       - name: laravel
-        image: bitnami/laravel:latest
+        image: php:8.4-cli-alpine
+        command:
+        - sh
+        - -c
+        - |
+          cd /var/www/html
+          docker-php-ext-install pdo pdo_mysql 2>/dev/null || true
+          php artisan key:generate --force
+          php artisan config:clear
+          php artisan serve --host=0.0.0.0 --port=8000
         env:
+        - name: DB_CONNECTION
+          value: "mysql"
         - name: DB_HOST
           value: "mysql"
         - name: DB_PORT
@@ -28,6 +55,12 @@ spec:
           value: "userpassword"
         ports:
         - containerPort: 8000
+        volumeMounts:
+        - name: app-code
+          mountPath: /var/www/html
+      volumes:
+      - name: app-code
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
